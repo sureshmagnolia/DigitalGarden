@@ -33,7 +33,10 @@ function PlantNetIdentifier({ base64Image, onSelectPlant }) {
   return (
     <div className="bg-green-50 p-4 rounded-lg border border-green-200 mt-4 shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-green-800">PlantNet AI Identification</h3>
+        <div>
+          <h3 className="font-semibold text-green-800">PlantNet AI Identification</h3>
+          <img src="https://my.plantnet.org/images/powered-by-plantnet-light.png" alt="Powered by PlantNet" className="h-6 mt-1" />
+        </div>
         <button 
           onClick={identify}
           disabled={loading}
