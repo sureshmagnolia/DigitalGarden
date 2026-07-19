@@ -19,7 +19,9 @@ function PlantAutocomplete({ value, onChange, onSelect }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`https://powo.science.kew.org/api/2/search?q=${encodeURIComponent(searchTerm)}`);
+      // Append wildcard for partial word matching (e.g. "Quercus al*")
+      const wildcardSearch = searchTerm + '*';
+      const res = await fetch(`https://powo.science.kew.org/api/2/search?q=${encodeURIComponent(wildcardSearch)}`);
       const data = await res.json();
       if (data.results) {
         setSuggestions(data.results.slice(0, 5));

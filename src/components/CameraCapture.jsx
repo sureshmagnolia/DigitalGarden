@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
+import EXIF from 'exif-js';
 
 function CameraCapture({ onPhotoCapture }) {
   const [photo, setPhoto] = useState(null);
@@ -34,12 +35,47 @@ function CameraCapture({ onPhotoCapture }) {
   const processImage = async (image, isLivePhoto) => {
     let locationExif = null;
 
-    // 1. Try to get GPS from the original photo's EXIF data
+    // 1. Try to get GPS from the original photo's EXIF data (Native iOS/Android)
     if (image.exif && (image.exif.Latitude || image.exif.GPSLatitude)) {
       locationExif = {
         GPSLatitude: image.exif.Latitude || image.exif.GPSLatitude,
         GPSLongitude: image.exif.Longitude || image.exif.GPSLongitude
       };
+    } else {
+      // 1b. Fallback: Manually parse EXIF from binary (required for Web/PWA gallery uploads)
+      try {
+        const byteString = atob(image.base64String);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const tags = EXIF.readFromBinaryFile(ab);
+        if (tags && tags.GPSLatitude && tags.GPSLongitude) {
+          const latRef = tags.GPSLatitudeRef || "N";
+          const lngRef = tags.GPSLongitudeRef || "W";
+          
+          const toDec = (arr) => {
+             const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
+             const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
+             const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
+             return d + (m/60) + (s/3600);
+          };
+
+          let latDec = toDec(tags.GPSLatitude);
+          let lngDec = toDec(tags.GPSLongitude);
+
+          if (latRef === "S") latDec = -latDec;
+          if (lngRef === "W") lngDec = -lngDec;
+
+          locationExif = {
+            GPSLatitude: latDec.toFixed(6),
+            GPSLongitude: lngDec.toFixed(6)
+          };
+        }
+      } catch (e) {
+        console.warn("Manual EXIF extraction failed", e);
+      }
     }
 
     // 2. Fallback to current live location ONLY if it was taken live via Camera
