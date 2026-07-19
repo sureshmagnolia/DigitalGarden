@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import EXIF from 'exif-js';
 
 function CameraCapture({ onPhotoCapture }) {
   const [photo, setPhoto] = useState(null);
+  const fileInputRef = useRef(null);
 
   const compressImage = (base64Str, maxWidth = 1024, quality = 0.6) => {
     return new Promise((resolve) => {
@@ -117,18 +119,43 @@ function CameraCapture({ onPhotoCapture }) {
   };
 
   const selectGalleryPhoto = async () => {
-    try {
-      const image = await Camera.getPhoto({
-        quality: 100, 
-        allowEditing: false,
-        resultType: CameraResultType.Base64,
-        source: CameraSource.Photos,
-        exif: true
-      });
-      await processImage(image, false);
-    } catch (error) {
-      console.error('Error selecting photo', error);
+    if (Capacitor.getPlatform() === 'web') {
+      // Capacitor Web strips EXIF data during its internal file handling.
+      // Use native HTML file input to get untouched raw binary for EXIF extraction.
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    } else {
+      try {
+        const image = await Camera.getPhoto({
+          quality: 100, 
+          allowEditing: false,
+          resultType: CameraResultType.Base64,
+          source: CameraSource.Photos,
+          exif: true
+        });
+        await processImage(image, false);
+      } catch (error) {
+        console.error('Error selecting photo', error);
+      }
     }
+  };
+
+  const handleWebFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Str = event.target.result.split(',')[1];
+      const pseudoImage = {
+        base64String: base64Str,
+        exif: {} // Force the manual EXIF extraction block
+      };
+      await processImage(pseudoImage, false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null; // Reset input
   };
 
   return (
@@ -163,6 +190,14 @@ function CameraCapture({ onPhotoCapture }) {
           >
             🖼️ Gallery
           </button>
+          {/* Hidden native file input strictly for Web Gallery uploads */}
+          <input 
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleWebFileChange}
+            className="hidden"
+          />
         </div>
       )}
     </div>
