@@ -7,6 +7,7 @@ function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
     plantName: '',
     lat: '',
     lng: '',
+    alt: '',
     locationName: '',
     notes: '',
     powoData: null
@@ -16,8 +17,9 @@ function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
     if (exifData) {
       setFormData(prev => ({
         ...prev,
-        lat: exifData.GPSLatitude || prev.lat,
-        lng: exifData.GPSLongitude || prev.lng
+        lat: exifData.GPSLatitude || exifData.Latitude || prev.lat,
+        lng: exifData.GPSLongitude || exifData.Longitude || prev.lng,
+        alt: exifData.GPSAltitude || exifData.Altitude || prev.alt
       }));
     }
   }, [exifData]);
@@ -123,28 +125,36 @@ function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-gray-700 font-medium mb-1">Latitude</label>
-          <input 
-            type="text" 
-            name="lat" 
-            value={formData.lat} 
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-          />
+        <div className="flex gap-4 mb-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+            <input 
+              type="text" 
+              value={formData.lat} 
+              onChange={(e) => setFormData({...formData, lat: e.target.value})}
+              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+            <input 
+              type="text" 
+              value={formData.lng} 
+              onChange={(e) => setFormData({...formData, lng: e.target.value})}
+              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Altitude (m)</label>
+            <input 
+              type="text" 
+              value={formData.alt || ''} 
+              onChange={(e) => setFormData({...formData, alt: e.target.value})}
+              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+              placeholder="e.g. 24.5"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-gray-700 font-medium mb-1">Longitude</label>
-          <input 
-            type="text" 
-            name="lng" 
-            value={formData.lng} 
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-          />
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>

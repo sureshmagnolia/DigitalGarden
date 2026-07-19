@@ -41,7 +41,8 @@ function CameraCapture({ onPhotoCapture }) {
     if (image.exif && (image.exif.Latitude || image.exif.GPSLatitude)) {
       locationExif = {
         GPSLatitude: image.exif.Latitude || image.exif.GPSLatitude,
-        GPSLongitude: image.exif.Longitude || image.exif.GPSLongitude
+        GPSLongitude: image.exif.Longitude || image.exif.GPSLongitude,
+        GPSAltitude: image.exif.Altitude || image.exif.GPSAltitude || null
       };
     }
 
@@ -51,7 +52,8 @@ function CameraCapture({ onPhotoCapture }) {
         const position = await Geolocation.getCurrentPosition();
         locationExif = {
           GPSLatitude: position.coords.latitude,
-          GPSLongitude: position.coords.longitude
+          GPSLongitude: position.coords.longitude,
+          GPSAltitude: position.coords.altitude ? parseFloat(position.coords.altitude.toFixed(2)) : null
         };
       } catch (geoErr) {
         console.warn("Location access denied or unavailable", geoErr);
@@ -114,9 +116,20 @@ function CameraCapture({ onPhotoCapture }) {
       try {
         const gps = await exifr.gps(fileObj);
         if (gps && gps.latitude && gps.longitude) {
+          const parsed = await exifr.parse(fileObj);
+          let alt = parsed?.GPSAltitude || null;
+          
+          if (alt !== null && parsed.GPSAltitudeRef) {
+            const ref = parsed.GPSAltitudeRef;
+            if ((ref instanceof Uint8Array && ref[0] === 1) || ref === 1 || ref === '1') {
+              alt = -alt;
+            }
+          }
+
           return {
             Latitude: gps.latitude,
-            Longitude: gps.longitude
+            Longitude: gps.longitude,
+            Altitude: alt ? parseFloat(alt.toFixed(2)) : null
           };
         }
       } catch (err) {
