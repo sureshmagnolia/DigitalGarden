@@ -115,8 +115,8 @@ function CameraCapture({ onPhotoCapture }) {
         const gps = await exifr.gps(fileObj);
         if (gps && gps.latitude && gps.longitude) {
           return {
-            Latitude: gps.latitude.toFixed(6),
-            Longitude: gps.longitude.toFixed(6)
+            Latitude: gps.latitude,
+            Longitude: gps.longitude
           };
         }
       } catch (err) {
