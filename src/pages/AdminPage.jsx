@@ -87,8 +87,29 @@ function AdminPage() {
                 <p className="text-sm text-gray-600 mb-1"><strong>Date:</strong> {new Date(sub.Timestamp).toLocaleDateString()}</p>
                 
                 {(sub.Lat || sub.Lng) && (
-                  <p className="text-xs text-blue-600 mb-4 break-all">📍 {sub.Lat}, {sub.Lng}</p>
+                  <p className="text-xs text-blue-600 mb-2 break-all">📍 {sub.Lat}, {sub.Lng}</p>
                 )}
+
+                {(() => {
+                  try {
+                    const extData = sub.POWO_Data ? JSON.parse(sub.POWO_Data) : null;
+                    if (!extData || (!extData.plantNetFamily && !extData.accepted && !extData.name)) return null;
+                    return (
+                      <div className="bg-blue-50 border border-blue-200 p-2 rounded text-xs mb-4 mt-2">
+                        <p className="font-bold text-blue-800 mb-1">Extended Data</p>
+                        {extData.plantNetFamily && <p className="text-blue-900"><strong>Family:</strong> {extData.plantNetFamily}</p>}
+                        {extData.plantNetGenus && <p className="text-blue-900"><strong>Genus:</strong> {extData.plantNetGenus}</p>}
+                        
+                        {/* Support both new schema and legacy schema */}
+                        {extData.powoAcceptedName ? (
+                          <p className="text-blue-900"><strong>POWO:</strong> {extData.powoAcceptedName}</p>
+                        ) : (
+                          <p className="text-blue-900"><strong>POWO:</strong> {extData.accepted?.name || extData.name}</p>
+                        )}
+                      </div>
+                    );
+                  } catch(e) { return null; }
+                })()}
 
                 <div className="mt-auto flex gap-2 pt-4 border-t border-gray-100">
                   <button 

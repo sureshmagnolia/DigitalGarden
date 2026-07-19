@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function MetadataForm({ base64Image, exifData, autoPlantName, onSubmit }) {
+function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
   const [formData, setFormData] = useState({
     submitterName: '',
     plantName: '',
@@ -11,21 +11,37 @@ function MetadataForm({ base64Image, exifData, autoPlantName, onSubmit }) {
   });
 
   useEffect(() => {
-    if (autoPlantName) {
-      setFormData(prev => ({ ...prev, plantName: autoPlantName }));
+    if (autoPlantData) {
+      const sciName = autoPlantData.species.scientificNameWithoutAuthor;
+      setFormData(prev => ({ ...prev, plantName: sciName }));
       
+      const extendedData = {
+        plantNetFamily: autoPlantData.species.family?.scientificNameWithoutAuthor || 'Unknown',
+        plantNetGenus: autoPlantData.species.genus?.scientificNameWithoutAuthor || 'Unknown',
+        plantNetCommonNames: autoPlantData.species.commonNames || [],
+        powoAcceptedName: 'Unknown',
+        powoAuthor: 'Unknown',
+        powoSynonyms: []
+      };
+
       // Fetch POWO Data
-      fetch(`https://powo.science.kew.org/api/2/search?q=${encodeURIComponent(autoPlantName)}`)
+      fetch(`https://powo.science.kew.org/api/2/search?q=${encodeURIComponent(sciName)}`)
         .then(res => res.json())
         .then(data => {
           if (data.results && data.results.length > 0) {
             const bestMatch = data.results[0];
-            setFormData(prev => ({ ...prev, powoData: bestMatch }));
+            extendedData.powoAcceptedName = bestMatch.accepted?.name || bestMatch.name || 'Unknown';
+            extendedData.powoAuthor = bestMatch.author || 'Unknown';
+            extendedData.powoSynonyms = bestMatch.synonyms ? bestMatch.synonyms.map(s => s.name) : [];
           }
+          setFormData(prev => ({ ...prev, powoData: extendedData }));
         })
-        .catch(err => console.error("POWO Error:", err));
+        .catch(err => {
+          console.error("POWO Error:", err);
+          setFormData(prev => ({ ...prev, powoData: extendedData }));
+        });
     }
-  }, [autoPlantName]);
+  }, [autoPlantData]);
 
   const [loading, setLoading] = useState(false);
 
@@ -124,10 +140,19 @@ function MetadataForm({ base64Image, exifData, autoPlantName, onSubmit }) {
 
       {formData.powoData && (
         <div className="bg-blue-50 border border-blue-200 p-3 rounded mb-6 text-sm">
-          <p className="font-bold text-blue-800">Taxonomic Data (POWO)</p>
-          <p className="text-blue-900"><strong>Accepted Name:</strong> {formData.powoData.accepted?.name || formData.powoData.name}</p>
-          <p className="text-blue-900"><strong>Author:</strong> {formData.powoData.author}</p>
-          <p className="text-blue-900"><strong>Synonyms:</strong> {formData.powoData.synonyms ? formData.powoData.synonyms.map(s => s.name).join(', ') : 'None'}</p>
+          <p className="font-bold text-blue-800">Extended Plant Metadata</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div>
+              <p className="text-blue-900"><strong>Family:</strong> {formData.powoData.plantNetFamily}</p>
+              <p className="text-blue-900"><strong>Genus:</strong> {formData.powoData.plantNetGenus}</p>
+              <p className="text-blue-900"><strong>Common:</strong> {formData.powoData.plantNetCommonNames.length > 0 ? formData.powoData.plantNetCommonNames.join(', ') : 'None'}</p>
+            </div>
+            <div>
+              <p className="text-blue-900"><strong>POWO Match:</strong> {formData.powoData.powoAcceptedName}</p>
+              <p className="text-blue-900"><strong>Author:</strong> {formData.powoData.powoAuthor}</p>
+              <p className="text-blue-900"><strong>Synonyms:</strong> {formData.powoData.powoSynonyms.length > 0 ? formData.powoData.powoSynonyms.join(', ') : 'None'}</p>
+            </div>
+          </div>
         </div>
       )}
 

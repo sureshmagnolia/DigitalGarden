@@ -8,7 +8,7 @@ import { submitPlantData } from '../services/api';
 function SubmitPage() {
   const [base64Image, setBase64Image] = useState(null);
   const [exifData, setExifData] = useState(null);
-  const [autoPlantName, setAutoPlantName] = useState('');
+  const [autoPlantData, setAutoPlantData] = useState(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
@@ -61,7 +61,7 @@ function SubmitPage() {
           <CameraCapture onPhotoCapture={handlePhotoCapture} />
           <PlantNetIdentifier 
             base64Image={base64Image} 
-            onSelectPlant={(name) => setAutoPlantName(name)} 
+            onSelectPlant={(plantNetData) => setAutoPlantData(plantNetData)} 
           />
         </div>
         
@@ -70,7 +70,7 @@ function SubmitPage() {
           <MetadataForm 
             base64Image={base64Image} 
             exifData={exifData}
-            autoPlantName={autoPlantName}
+            autoPlantData={autoPlantData}
             onSubmit={handleFormSubmit}
           />
         </div>

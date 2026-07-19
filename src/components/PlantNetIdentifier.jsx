@@ -54,7 +54,7 @@ function PlantNetIdentifier({ base64Image, onSelectPlant }) {
           {results.map((r, i) => (
             <button 
               key={i}
-              onClick={() => onSelectPlant(r.species.scientificNameWithoutAuthor)}
+              onClick={() => onSelectPlant(r)}
               className="w-full text-left bg-white p-3 rounded border border-green-300 hover:bg-green-100 transition flex justify-between items-center"
             >
               <div>
