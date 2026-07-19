@@ -14,7 +14,7 @@
 
 const SHEET_ID = '1Dp6jD9a7Xyjl34xZDx67plywjqfb9LVe_9mjIQF7N7o'; // Replace with your Sheet ID
 const FOLDER_ID = '1Q_rzMGjAGdX3WV_XiCRc3Esk3AJZXeDp'; // Replace with your Folder ID
-const PLANTNET_API_KEY = 'YOUR_PLANTNET_API_KEY'; // For secure server-side calls
+const PLANTNET_API_KEY = '2b10PcH7zDytyuJaWqXC9EYu'; // For secure server-side calls
 
 function doGet(e) {
   const action = e.parameter.action;
