@@ -4,21 +4,49 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 function CameraCapture({ onPhotoCapture }) {
   const [photo, setPhoto] = useState(null);
 
+  const compressImage = (base64Str, maxWidth = 1024, quality = 0.6) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = `data:image/jpeg;base64,${base64Str}`;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Output compressed base64 (without the data:image/jpeg;base64, prefix)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl.split(',')[1]);
+      };
+    });
+  };
+
   const takePhoto = async () => {
     try {
       const image = await Camera.getPhoto({
         quality: 60,
-        width: 1024, // Restrict max width to shrink massive phone photos
+        width: 1024, // Works on Native mobile
         allowEditing: false,
         resultType: CameraResultType.Base64,
-        source: CameraSource.Prompt // Asks user to use Camera or Photos
+        source: CameraSource.Prompt
       });
 
-      // image.base64String contains the raw base64 data
-      setPhoto(`data:image/jpeg;base64,${image.base64String}`);
+      // Force compression on Web/Desktop using Canvas
+      const compressedBase64 = await compressImage(image.base64String);
+
+      setPhoto(`data:image/jpeg;base64,${compressedBase64}`);
       
       if (onPhotoCapture) {
-        onPhotoCapture(image.base64String, image.exif); // Pass EXIF data if available
+        onPhotoCapture(compressedBase64, image.exif); // Pass EXIF data if available
       }
     } catch (error) {
       console.error('Error taking photo', error);
