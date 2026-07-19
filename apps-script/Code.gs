@@ -72,6 +72,10 @@ function submitPlant(data) {
   const timestamp = new Date().toISOString();
   const rowId = Utilities.getUuid();
   
+  const extendedJson = data.powoData || {};
+  extendedJson.notes = data.notes || '';
+  extendedJson.locationName = data.locationName || '';
+  
   sheet.appendRow([
     rowId,
     timestamp,
@@ -82,7 +86,7 @@ function submitPlant(data) {
     fileUrl,
     fileId,
     'pending',
-    JSON.stringify(data.powoData || {})
+    JSON.stringify(extendedJson)
   ]);
   
   return ContentService.createTextOutput(JSON.stringify({ success: true, rowId: rowId, fileUrl: fileUrl }))

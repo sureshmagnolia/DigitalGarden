@@ -33,28 +33,40 @@ function CameraCapture({ onPhotoCapture }) {
 
   const takePhoto = async () => {
     try {
+      // Request uncompressed image to preserve EXIF data, especially for gallery photos
       const image = await Camera.getPhoto({
-        quality: 60,
-        width: 1024, // Works on Native mobile
+        quality: 100, 
         allowEditing: false,
         resultType: CameraResultType.Base64,
-        source: CameraSource.Prompt
+        source: CameraSource.Prompt,
+        exif: true
       });
 
-      // Fetch exact GPS coordinates at time of capture since compression strips EXIF
       let locationExif = null;
-      try {
-        const position = await Geolocation.getCurrentPosition();
+
+      // 1. Try to get GPS from the original photo's EXIF data
+      if (image.exif && (image.exif.Latitude || image.exif.GPSLatitude)) {
         locationExif = {
-          GPSLatitude: position.coords.latitude,
-          GPSLongitude: position.coords.longitude
+          GPSLatitude: image.exif.Latitude || image.exif.GPSLatitude,
+          GPSLongitude: image.exif.Longitude || image.exif.GPSLongitude
         };
-      } catch (geoErr) {
-        console.warn("Location access denied or unavailable", geoErr);
       }
 
-      // Force compression on Web/Desktop using Canvas
-      const compressedBase64 = await compressImage(image.base64String);
+      // 2. Fallback to current live location if EXIF GPS is missing
+      if (!locationExif) {
+        try {
+          const position = await Geolocation.getCurrentPosition();
+          locationExif = {
+            GPSLatitude: position.coords.latitude,
+            GPSLongitude: position.coords.longitude
+          };
+        } catch (geoErr) {
+          console.warn("Location access denied or unavailable", geoErr);
+        }
+      }
+
+      // 3. Compress the image locally via Canvas (this strips EXIF from the base64, but we already saved the location above!)
+      const compressedBase64 = await compressImage(image.base64String, 1024, 0.6);
 
       setPhoto(`data:image/jpeg;base64,${compressedBase64}`);
       
