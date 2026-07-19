@@ -37,47 +37,12 @@ function CameraCapture({ onPhotoCapture }) {
   const processImage = async (image, isLivePhoto) => {
     let locationExif = null;
 
-    // 1. Try to get GPS from the original photo's EXIF data (Native iOS/Android)
+    // 1. Try to get GPS from the original photo's EXIF data (Native iOS/Android or Pre-filled)
     if (image.exif && (image.exif.Latitude || image.exif.GPSLatitude)) {
       locationExif = {
         GPSLatitude: image.exif.Latitude || image.exif.GPSLatitude,
         GPSLongitude: image.exif.Longitude || image.exif.GPSLongitude
       };
-    } else {
-      // 1b. Fallback: Manually parse EXIF from binary (required for Web/PWA gallery uploads)
-      try {
-        const byteString = atob(image.base64String);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        const tags = EXIF.readFromBinaryFile(ab);
-        if (tags && tags.GPSLatitude && tags.GPSLongitude) {
-          const latRef = tags.GPSLatitudeRef || "N";
-          const lngRef = tags.GPSLongitudeRef || "W";
-          
-          const toDec = (arr) => {
-             const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
-             const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
-             const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
-             return d + (m/60) + (s/3600);
-          };
-
-          let latDec = toDec(tags.GPSLatitude);
-          let lngDec = toDec(tags.GPSLongitude);
-
-          if (latRef === "S") latDec = -latDec;
-          if (lngRef === "W") lngDec = -lngDec;
-
-          locationExif = {
-            GPSLatitude: latDec.toFixed(6),
-            GPSLongitude: lngDec.toFixed(6)
-          };
-        }
-      } catch (e) {
-        console.warn("Manual EXIF extraction failed", e);
-      }
     }
 
     // 2. Fallback to current live location ONLY if it was taken live via Camera
@@ -145,16 +110,47 @@ function CameraCapture({ onPhotoCapture }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64Str = event.target.result.split(',')[1];
-      const pseudoImage = {
-        base64String: base64Str,
-        exif: {} // Force the manual EXIF extraction block
+    // Parse EXIF directly from the raw File object BEFORE any reader conversion!
+    EXIF.getData(file, function() {
+      let locationExif = null;
+      const lat = EXIF.getTag(this, "GPSLatitude");
+      const lng = EXIF.getTag(this, "GPSLongitude");
+      
+      if (lat && lng) {
+        const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+        const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
+        
+        const toDec = (arr) => {
+           const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
+           const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
+           const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
+           return d + (m/60) + (s/3600);
+        };
+        
+        let latDec = toDec(lat);
+        let lngDec = toDec(lng);
+        if (latRef === "S") latDec = -latDec;
+        if (lngRef === "W") lngDec = -lngDec;
+
+        locationExif = {
+          Latitude: latDec.toFixed(6),
+          Longitude: lngDec.toFixed(6)
+        };
+      }
+
+      // Now read the file to get the base64 image data for preview and upload
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Str = event.target.result.split(',')[1];
+        const pseudoImage = {
+          base64String: base64Str,
+          exif: locationExif || {} // Pass extracted EXIF to processImage natively
+        };
+        await processImage(pseudoImage, false);
       };
-      await processImage(pseudoImage, false);
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+
     e.target.value = null; // Reset input
   };
 
