@@ -75,8 +75,8 @@ function AdminPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {submissions.map((sub, index) => (
             <div key={sub.ID || index} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
-              {sub.FileURL ? (
-                <img src={sub.FileURL} alt={sub.PlantName || 'Plant'} className="w-full h-48 object-cover" />
+              {sub.FileID ? (
+                <img src={`https://drive.google.com/thumbnail?id=${sub.FileID}&sz=w800`} alt={sub.PlantName || 'Plant'} className="w-full h-48 object-cover" />
               ) : (
                 <div className="w-full h-48 bg-gray-200 flex items-center justify-center">No Image</div>
               )}

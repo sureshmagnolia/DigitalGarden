@@ -7,7 +7,8 @@ function CameraCapture({ onPhotoCapture }) {
   const takePhoto = async () => {
     try {
       const image = await Camera.getPhoto({
-        quality: 90,
+        quality: 60,
+        width: 1024, // Restrict max width to shrink massive phone photos
         allowEditing: false,
         resultType: CameraResultType.Base64,
         source: CameraSource.Prompt // Asks user to use Camera or Photos
