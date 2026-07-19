@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
-import EXIF from 'exif-js';
+import exifr from 'exifr';
 
 function CameraCapture({ onPhotoCapture }) {
   const [photo, setPhoto] = useState(null);
@@ -112,33 +112,15 @@ function CameraCapture({ onPhotoCapture }) {
 
     const extractExif = async (fileObj) => {
       try {
-        const ab = await fileObj.arrayBuffer(); // Instantly get raw binary
-        const tags = EXIF.readFromBinaryFile(ab);
-        
-        if (tags && tags.GPSLatitude && tags.GPSLongitude) {
-          const latRef = tags.GPSLatitudeRef || "N";
-          const lngRef = tags.GPSLongitudeRef || "W";
-          
-          const toDec = (arr) => {
-             const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
-             const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
-             const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
-             return d + (m/60) + (s/3600);
-          };
-          
-          let latDec = toDec(tags.GPSLatitude);
-          let lngDec = toDec(tags.GPSLongitude);
-          
-          if (latRef === "S") latDec = -latDec;
-          if (lngRef === "W") lngDec = -lngDec;
-
+        const gps = await exifr.gps(fileObj);
+        if (gps && gps.latitude && gps.longitude) {
           return {
-            Latitude: latDec.toFixed(6),
-            Longitude: lngDec.toFixed(6)
+            Latitude: gps.latitude.toFixed(6),
+            Longitude: gps.longitude.toFixed(6)
           };
         }
       } catch (err) {
-        console.warn("EXIF arrayBuffer extraction error", err);
+        console.warn("EXIF extraction error with exifr", err);
       }
       return null;
     };
