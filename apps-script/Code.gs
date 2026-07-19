@@ -75,7 +75,7 @@ function submitPlant(data) {
   const extendedJson = data.powoData || {};
   extendedJson.notes = data.notes || '';
   extendedJson.locationName = data.locationName || '';
-  extendedJson.altitude = data.altitude || '';
+  extendedJson.altitude = data.alt || data.altitude || '';
   
   sheet.appendRow([
     rowId,
