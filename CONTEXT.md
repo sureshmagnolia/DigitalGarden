@@ -20,20 +20,22 @@ All initial scaffolding and core frontend flows have been built:
 1. **Submission Flow (`/submit`):**
    - User can snap/select a photo (`CameraCapture.jsx`).
    - Image is converted to Base64.
+   - **EXIF & Geolocation:** GPS coordinates (Latitude, Longitude, and Altitude) are reliably extracted natively from the raw binary via the `exifr` library for gallery uploads, and via `@capacitor/geolocation` for live photos.
    - User can click "Identify Photo" (`PlantNetIdentifier.jsx`) to ping the backend PlantNet proxy.
-   - Selecting a candidate auto-fills the plant name and triggers a POWO API fetch to get synonyms (`MetadataForm.jsx`).
+   - Selecting a candidate auto-fills the plant name and triggers a POWO API fetch to get synonyms (`MetadataForm.jsx`). The POWO search utilizes a wildcard (`*`) to ensure robust partial matching on species queries.
+   - Form fields have been organized to clearly separate `Location Name` from `Notes`.
 2. **Admin Dashboard (`/admin`):**
    - Fetches pending submissions from GAS.
    - Admin can review, Approve (updates status in Sheet), or Reject (deletes from Sheet and trashes in Drive).
 3. **Backend Logic (`apps-script/Code.gs`):**
    - A `.gs` file has been generated with all `doGet`, `doPost`, and Drive/Sheets logic.
+   - `Code.gs` explicitly parses extended metadata (like Altitude, Location Name, and Notes) and archives them seamlessly into the `POWO_Data` JSON column to prevent breaking the spreadsheet layout.
 
 ## Pending Tasks (Next Steps)
-1. **Backend Deployment (User Action):** The user needs to deploy `apps-script/Code.gs` to Google Apps Script, attach their Google Sheet ID, Drive Folder ID, and PlantNet API Key, and publish it as a Web App.
-2. **Hook Up Frontend API:** Once the Web App URL is generated, it must be pasted into `src/services/api.js` (`API_URL`).
-3. **EXIF GPS Extraction:** The frontend currently captures Base64 images. We need to implement the EXIF parsing logic (using `exif-js` or reading Capacitor's returned metadata) to auto-fill the Lat/Lng fields in the form.
-4. **Error Handling & Polish:** Improve loading states and handle Google Drive upload timeouts if images are very large.
-5. **Mobile Build:** Run `npx cap sync` and test on Android/iOS via Android Studio/Xcode.
+1. **Backend Deployment (User Action):** The user needs to deploy the latest `apps-script/Code.gs` to Google Apps Script as a **New Version** to ensure backend modifications take effect.
+2. **Hook Up Frontend API:** Make sure `src/services/api.js` (`API_URL`) points to the latest active deployment.
+3. **Error Handling & Polish:** Improve loading states and handle Google Drive upload timeouts if images are very large.
+4. **Mobile Build:** Run `npx cap sync` and test on Android/iOS via Android Studio/Xcode.
 
 ## Helpful Files
 - `src/services/api.js`: The central hub for all backend communication.
