@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import PlantAutocomplete from './PlantAutocomplete';
 
 function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
   const [formData, setFormData] = useState({
     submitterName: '',
     plantName: '',
-    lat: exifData?.GPSLatitude || '',
-    lng: exifData?.GPSLongitude || '',
+    lat: '',
+    lng: '',
+    locationName: '',
     notes: '',
     powoData: null
   });
+
+  useEffect(() => {
+    if (exifData) {
+      setFormData(prev => ({
+        ...prev,
+        lat: exifData.GPSLatitude || prev.lat,
+        lng: exifData.GPSLongitude || prev.lng
+      }));
+    }
+  }, [exifData]);
 
   useEffect(() => {
     if (autoPlantData) {
@@ -94,13 +106,20 @@ function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
 
       <div className="mb-4">
         <label className="block text-gray-700 font-medium mb-1">Plant Name (if known)</label>
-        <input 
-          type="text" 
-          name="plantName" 
-          value={formData.plantName} 
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-          placeholder="e.g. Quercus robur"
+        <PlantAutocomplete 
+          value={formData.plantName}
+          onChange={(val) => setFormData({ ...formData, plantName: val })}
+          onSelect={(item) => {
+            const extendedData = {
+              plantNetFamily: 'Unknown',
+              plantNetGenus: item.name.split(' ')[0], // Best guess from scientific name
+              plantNetCommonNames: [],
+              powoAcceptedName: item.accepted?.name || item.name || 'Unknown',
+              powoAuthor: item.author || 'Unknown',
+              powoSynonyms: item.synonyms ? item.synonyms.map(s => s.name) : []
+            };
+            setFormData(prev => ({ ...prev, powoData: extendedData }));
+          }}
         />
       </div>
 
@@ -127,15 +146,29 @@ function MetadataForm({ base64Image, exifData, autoPlantData, onSubmit }) {
         </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-gray-700 font-medium mb-1">Notes / Location Name</label>
-        <textarea 
-          name="notes" 
-          value={formData.notes} 
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2"
-          rows="3"
-        ></textarea>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Location Name</label>
+          <input 
+            type="text" 
+            name="locationName" 
+            value={formData.locationName} 
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="e.g. Central Park"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Notes</label>
+          <textarea 
+            name="notes" 
+            value={formData.notes} 
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            rows="1"
+            placeholder="Any extra details..."
+          ></textarea>
+        </div>
       </div>
 
       {formData.powoData && (

@@ -93,20 +93,32 @@ function AdminPage() {
                 {(() => {
                   try {
                     const extData = sub.POWO_Data ? JSON.parse(sub.POWO_Data) : null;
-                    if (!extData || (!extData.plantNetFamily && !extData.accepted && !extData.name)) return null;
+                    if (!extData) return null;
+                    
                     return (
-                      <div className="bg-blue-50 border border-blue-200 p-2 rounded text-xs mb-4 mt-2">
-                        <p className="font-bold text-blue-800 mb-1">Extended Data</p>
-                        {extData.plantNetFamily && <p className="text-blue-900"><strong>Family:</strong> {extData.plantNetFamily}</p>}
-                        {extData.plantNetGenus && <p className="text-blue-900"><strong>Genus:</strong> {extData.plantNetGenus}</p>}
-                        
-                        {/* Support both new schema and legacy schema */}
-                        {extData.powoAcceptedName ? (
-                          <p className="text-blue-900"><strong>POWO:</strong> {extData.powoAcceptedName}</p>
-                        ) : (
-                          <p className="text-blue-900"><strong>POWO:</strong> {extData.accepted?.name || extData.name}</p>
+                      <>
+                        {(extData.locationName || extData.notes) && (
+                          <div className="bg-gray-50 border border-gray-200 p-2 rounded text-xs mb-2">
+                            {extData.locationName && <p className="text-gray-800"><strong>Location:</strong> {extData.locationName}</p>}
+                            {extData.notes && <p className="text-gray-800"><strong>Notes:</strong> {extData.notes}</p>}
+                          </div>
                         )}
-                      </div>
+                        
+                        {(extData.plantNetFamily || extData.accepted || extData.name) && (
+                          <div className="bg-blue-50 border border-blue-200 p-2 rounded text-xs mb-4">
+                            <p className="font-bold text-blue-800 mb-1">Extended Data</p>
+                            {extData.plantNetFamily && <p className="text-blue-900"><strong>Family:</strong> {extData.plantNetFamily}</p>}
+                            {extData.plantNetGenus && <p className="text-blue-900"><strong>Genus:</strong> {extData.plantNetGenus}</p>}
+                            
+                            {/* Support both new schema and legacy schema */}
+                            {extData.powoAcceptedName ? (
+                              <p className="text-blue-900"><strong>POWO:</strong> {extData.powoAcceptedName}</p>
+                            ) : (
+                              <p className="text-blue-900"><strong>POWO:</strong> {extData.accepted?.name || extData.name}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     );
                   } catch(e) { return null; }
                 })()}

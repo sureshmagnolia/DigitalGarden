@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 
 function CameraCapture({ onPhotoCapture }) {
   const [photo, setPhoto] = useState(null);
@@ -40,13 +41,25 @@ function CameraCapture({ onPhotoCapture }) {
         source: CameraSource.Prompt
       });
 
+      // Fetch exact GPS coordinates at time of capture since compression strips EXIF
+      let locationExif = null;
+      try {
+        const position = await Geolocation.getCurrentPosition();
+        locationExif = {
+          GPSLatitude: position.coords.latitude,
+          GPSLongitude: position.coords.longitude
+        };
+      } catch (geoErr) {
+        console.warn("Location access denied or unavailable", geoErr);
+      }
+
       // Force compression on Web/Desktop using Canvas
       const compressedBase64 = await compressImage(image.base64String);
 
       setPhoto(`data:image/jpeg;base64,${compressedBase64}`);
       
       if (onPhotoCapture) {
-        onPhotoCapture(compressedBase64, image.exif); // Pass EXIF data if available
+        onPhotoCapture(compressedBase64, locationExif);
       }
     } catch (error) {
       console.error('Error taking photo', error);
