@@ -1,5 +1,5 @@
 // Replace this URL with your deployed Google Apps Script Web App URL
-export const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+export const API_URL = "https://script.google.com/macros/s/AKfycbzDc3CNzGQJcdjFI0C65hX75jtMmwKs2sWm0na3artDdSyDwkp6DiajPMf5wFtfgMn0/exec";
 
 export async function submitPlantData(payload) {
   const response = await fetch(API_URL, {
