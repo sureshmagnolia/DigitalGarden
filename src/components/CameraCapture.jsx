@@ -110,59 +110,38 @@ function CameraCapture({ onPhotoCapture }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const extractExif = (fileObj) => new Promise((resolve) => {
-      let resolved = false;
-
-      // Safety timeout in case EXIF.getData gets stuck
-      const timer = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          resolve(null);
-        }
-      }, 1000);
-
+    const extractExif = async (fileObj) => {
       try {
-        EXIF.getData(fileObj, function() {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timer);
-
-          let locationExif = null;
-          const lat = EXIF.getTag(this, "GPSLatitude");
-          const lng = EXIF.getTag(this, "GPSLongitude");
+        const ab = await fileObj.arrayBuffer(); // Instantly get raw binary
+        const tags = EXIF.readFromBinaryFile(ab);
+        
+        if (tags && tags.GPSLatitude && tags.GPSLongitude) {
+          const latRef = tags.GPSLatitudeRef || "N";
+          const lngRef = tags.GPSLongitudeRef || "W";
           
-          if (lat && lng) {
-            const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
-            const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
-            
-            const toDec = (arr) => {
-               const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
-               const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
-               const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
-               return d + (m/60) + (s/3600);
-            };
-            
-            let latDec = toDec(lat);
-            let lngDec = toDec(lng);
-            if (latRef === "S") latDec = -latDec;
-            if (lngRef === "W") lngDec = -lngDec;
+          const toDec = (arr) => {
+             const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
+             const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
+             const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
+             return d + (m/60) + (s/3600);
+          };
+          
+          let latDec = toDec(tags.GPSLatitude);
+          let lngDec = toDec(tags.GPSLongitude);
+          
+          if (latRef === "S") latDec = -latDec;
+          if (lngRef === "W") lngDec = -lngDec;
 
-            locationExif = {
-              Latitude: latDec.toFixed(6),
-              Longitude: lngDec.toFixed(6)
-            };
-          }
-          resolve(locationExif);
-        });
-      } catch (err) {
-        console.warn("EXIF extraction error", err);
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timer);
-          resolve(null);
+          return {
+            Latitude: latDec.toFixed(6),
+            Longitude: lngDec.toFixed(6)
+          };
         }
+      } catch (err) {
+        console.warn("EXIF arrayBuffer extraction error", err);
       }
-    });
+      return null;
+    };
 
     const locationExif = await extractExif(file);
 
