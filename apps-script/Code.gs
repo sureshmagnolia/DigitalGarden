@@ -12,8 +12,8 @@
  * 6. Copy the Web App URL and paste it into your React app's API service.
  */
 
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE'; // Replace with your Sheet ID
-const FOLDER_ID = 'YOUR_GOOGLE_DRIVE_FOLDER_ID_HERE'; // Replace with your Folder ID
+const SHEET_ID = '1Dp6jD9a7Xyjl34xZDx67plywjqfb9LVe_9mjIQF7N7o'; // Replace with your Sheet ID
+const FOLDER_ID = '1Q_rzMGjAGdX3WV_XiCRc3Esk3AJZXeDp'; // Replace with your Folder ID
 const PLANTNET_API_KEY = 'YOUR_PLANTNET_API_KEY'; // For secure server-side calls
 
 function doGet(e) {
