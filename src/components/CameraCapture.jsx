@@ -106,50 +106,77 @@ function CameraCapture({ onPhotoCapture }) {
     }
   };
 
-  const handleWebFileChange = (e) => {
+  const handleWebFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Parse EXIF directly from the raw File object BEFORE any reader conversion!
-    EXIF.getData(file, function() {
-      let locationExif = null;
-      const lat = EXIF.getTag(this, "GPSLatitude");
-      const lng = EXIF.getTag(this, "GPSLongitude");
-      
-      if (lat && lng) {
-        const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
-        const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
-        
-        const toDec = (arr) => {
-           const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
-           const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
-           const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
-           return d + (m/60) + (s/3600);
-        };
-        
-        let latDec = toDec(lat);
-        let lngDec = toDec(lng);
-        if (latRef === "S") latDec = -latDec;
-        if (lngRef === "W") lngDec = -lngDec;
+    const extractExif = (fileObj) => new Promise((resolve) => {
+      let resolved = false;
 
-        locationExif = {
-          Latitude: latDec.toFixed(6),
-          Longitude: lngDec.toFixed(6)
-        };
+      // Safety timeout in case EXIF.getData gets stuck
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+      }, 1000);
+
+      try {
+        EXIF.getData(fileObj, function() {
+          if (resolved) return;
+          resolved = true;
+          clearTimeout(timer);
+
+          let locationExif = null;
+          const lat = EXIF.getTag(this, "GPSLatitude");
+          const lng = EXIF.getTag(this, "GPSLongitude");
+          
+          if (lat && lng) {
+            const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+            const lngRef = EXIF.getTag(this, "GPSLongitudeRef") || "W";
+            
+            const toDec = (arr) => {
+               const d = arr[0].numerator ? arr[0].numerator/arr[0].denominator : arr[0];
+               const m = arr[1].numerator ? arr[1].numerator/arr[1].denominator : arr[1];
+               const s = arr[2].numerator ? arr[2].numerator/arr[2].denominator : arr[2];
+               return d + (m/60) + (s/3600);
+            };
+            
+            let latDec = toDec(lat);
+            let lngDec = toDec(lng);
+            if (latRef === "S") latDec = -latDec;
+            if (lngRef === "W") lngDec = -lngDec;
+
+            locationExif = {
+              Latitude: latDec.toFixed(6),
+              Longitude: lngDec.toFixed(6)
+            };
+          }
+          resolve(locationExif);
+        });
+      } catch (err) {
+        console.warn("EXIF extraction error", err);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
       }
-
-      // Now read the file to get the base64 image data for preview and upload
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64Str = event.target.result.split(',')[1];
-        const pseudoImage = {
-          base64String: base64Str,
-          exif: locationExif || {} // Pass extracted EXIF to processImage natively
-        };
-        await processImage(pseudoImage, false);
-      };
-      reader.readAsDataURL(file);
     });
+
+    const locationExif = await extractExif(file);
+
+    // Now read the file to get the base64 image data for preview and upload
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Str = event.target.result.split(',')[1];
+      const pseudoImage = {
+        base64String: base64Str,
+        exif: locationExif || {} // Pass extracted EXIF to processImage natively
+      };
+      await processImage(pseudoImage, false);
+    };
+    reader.readAsDataURL(file);
 
     e.target.value = null; // Reset input
   };
