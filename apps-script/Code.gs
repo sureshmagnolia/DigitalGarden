@@ -89,15 +89,17 @@ function submitPlant(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+const COLUMNS = ['ID', 'Timestamp', 'Submitter', 'PlantName', 'Lat', 'Lng', 'FileURL', 'FileID', 'Status', 'POWO_Data'];
+
 function getApprovedSubmissions() {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
   const approved = [];
   
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
+    if (i === 0 && (data[0][0] === 'ID' || data[0][8] === 'Status')) continue; // Skip header
     if (data[i][8] === 'approved') {
-      approved.push(formatRowAsObject(headers, data[i]));
+      approved.push(formatRowAsObject(data[i], i + 1));
     }
   }
   return { success: true, data: approved };
@@ -106,12 +108,12 @@ function getApprovedSubmissions() {
 function getPendingSubmissions() {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
   const pending = [];
   
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
+    if (i === 0 && (data[0][0] === 'ID' || data[0][8] === 'Status')) continue; // Skip header
     if (data[i][8] === 'pending') {
-      pending.push(formatRowAsObject(headers, data[i], i + 1));
+      pending.push(formatRowAsObject(data[i], i + 1));
     }
   }
   return { success: true, data: pending };
@@ -121,7 +123,7 @@ function updateStatus(rowId, status) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
   const data = sheet.getDataRange().getValues();
   
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     if (data[i][0] === rowId) {
       sheet.getRange(i + 1, 9).setValue(status);
       return ContentService.createTextOutput(JSON.stringify({ success: true }))
@@ -139,10 +141,10 @@ function rejectPlant(rowId, fileId) {
   return updateStatus(rowId, 'rejected');
 }
 
-function formatRowAsObject(headers, row, rowNumber = null) {
+function formatRowAsObject(row, rowNumber = null) {
   const obj = {};
-  for (let i = 0; i < headers.length; i++) {
-    obj[headers[i]] = row[i];
+  for (let i = 0; i < COLUMNS.length; i++) {
+    obj[COLUMNS[i]] = row[i];
   }
   if (rowNumber) obj.sheetRowNumber = rowNumber;
   return obj;
