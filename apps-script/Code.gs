@@ -36,6 +36,13 @@ function doGet(e) {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+    
+    // Security check for all POST requests
+    if (data.token !== 'digitalgarden2026!') {
+      return ContentService.createTextOutput(JSON.stringify({error: 'Unauthorized access'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     if (action === 'submit_plant') {

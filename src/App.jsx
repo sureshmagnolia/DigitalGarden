@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { SignedIn, SignedOut, RedirectToSignIn, UserButton } from '@clerk/clerk-react';
 import SubmitPage from './pages/SubmitPage';
 import AdminPage from './pages/AdminPage';
 
@@ -24,8 +25,6 @@ function Home() {
   );
 }
 
-
-
 function App() {
   return (
     <Router>
@@ -33,13 +32,39 @@ function App() {
         <nav className="bg-green-700 p-4 text-white shadow-md">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <Link to="/" className="font-bold text-xl tracking-wide">🌿 DigitalGarden</Link>
+            <div>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+              <SignedOut>
+                <Link to="/submit" className="text-white hover:underline font-semibold">Sign In</Link>
+              </SignedOut>
+            </div>
           </div>
         </nav>
         <main className="flex-1 max-w-6xl w-full mx-auto bg-white shadow-sm">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/submit" element={<SubmitPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/submit" element={
+              <>
+                <SignedIn>
+                  <SubmitPage />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            } />
+            <Route path="/admin" element={
+              <>
+                <SignedIn>
+                  <AdminPage />
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
+              </>
+            } />
           </Routes>
         </main>
       </div>
