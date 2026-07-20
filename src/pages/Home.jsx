@@ -181,11 +181,26 @@ function Home() {
           </div>
           <input
             type="text"
+            list="search-suggestions"
             className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm shadow-sm"
             placeholder="Search by plant name, family, genus, or submitter..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <datalist id="search-suggestions">
+            {Array.from(new Set(
+              entries.flatMap(entry => {
+                const p = entry.parsedPowo;
+                return [
+                  entry.PlantName, entry.Submitter, 
+                  p.plantNetFamily, p.plantNetGenus, 
+                  p.powoAcceptedName, p.accepted?.name, p.name
+                ];
+              }).filter(Boolean)
+            )).sort().map(term => (
+              <option key={term} value={term} />
+            ))}
+          </datalist>
         </div>
 
         {/* Gallery */}
